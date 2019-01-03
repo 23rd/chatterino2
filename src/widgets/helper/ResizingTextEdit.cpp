@@ -129,6 +129,14 @@ void ResizingTextEdit::keyPressEvent(QKeyEvent *event)
 
         if (!this->completionInProgress_)
         {
+            // Check if prefix is english. If it's not, then lenghts of two QString are same.
+            const auto translatedString = replaceFromWrongKeyboardLayout(
+                currentCompletionPrefix,
+                QLocale::Russian,
+                QLocale::English);
+            if (translatedString.length() == currentCompletionPrefix.length()) {
+                currentCompletionPrefix = translatedString;
+            }
             // First type pressing tab after modifying a message, we refresh our
             // completion model
             this->completer_->setModel(completionModel);
@@ -276,6 +284,24 @@ void ResizingTextEdit::insertFromMimeData(const QMimeData *source)
 QCompleter *ResizingTextEdit::getCompleter() const
 {
     return this->completer_;
+}
+
+QString ResizingTextEdit::replaceFromWrongKeyboardLayout(QString text, QLocale::Language fromLang, QLocale::Language toLang) {
+    static QMap<QLocale::Language, QString> completionLangs;
+    // Setted ";" as ":" to allow complete with "ж" like with "Ж".
+    completionLangs[QLocale::Russian] = "йцукенгшщзхъ\\фывапролджэячсмитьбю.ёЙЦУКЕНГШЩЗХЪ/ФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё!\"№;%:?*()_+";
+    completionLangs[QLocale::English] = "qwertyuiop[]\\asdfghjkl:\"zxcvbnm,./`QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<>?~!@#$%^&*()_+";
+
+    const auto s = completionLangs[fromLang];
+    const auto en = completionLangs[toLang];
+    auto newString = QString();
+
+    for (auto i = 0; i < text.length(); i++) {
+        const auto index = s.indexOf(text[i]);
+        newString += index < 0 ? QString() : QString(en[index]);
+    }
+
+    return newString;
 }
 
 }  // namespace chatterino
