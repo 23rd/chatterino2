@@ -3,6 +3,7 @@
 #include <pajlada/signals/signal.hpp>
 #include <QCompleter>
 #include <QKeyEvent>
+#include <QLocale>
 #include <QTextEdit>
 
 namespace chatterino {
@@ -44,6 +45,9 @@ private:
     // hadSpace is set to true in case the "textUnderCursor" word was after a
     // space
     QString textUnderCursor(bool *hadSpace = nullptr) const;
+    QString replaceFromWrongKeyboardLayout(QString text,
+                                           QLocale::Language fromLang,
+                                           QLocale::Language toLang);
 
     QCompleter *completer_ = nullptr;
     /**
