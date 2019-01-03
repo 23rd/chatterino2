@@ -175,6 +175,23 @@ void ResizingTextEdit::keyPressEvent(QKeyEvent *event)
             completionModel->updateResults(
                 currentCompletion, this->toPlainText(),
                 this->textCursor().position(), this->isFirstWord());
+
+            if (completionModel->rowCount() == 0)
+            {
+                // Nothing matched what was typed, so the word might have been
+                // typed in the wrong keyboard layout. Check if prefix is
+                // english. If it's not, then lenghts of two QString are same.
+                // This is only a fallback: emotes that are actually named in
+                // cyrillic have to keep completing from the original word.
+                const auto translatedString = replaceFromWrongKeyboardLayout(
+                    currentCompletion, QLocale::Russian, QLocale::English);
+                if (translatedString.length() == currentCompletion.length())
+                {
+                    completionModel->updateResults(
+                        translatedString, this->toPlainText(),
+                        this->textCursor().position(), this->isFirstWord());
+                }
+            }
             this->completionInProgress_ = true;
             {
                 // this blocks cursor movement events from resetting tab completion
@@ -349,6 +366,31 @@ void ResizingTextEdit::contextMenuEvent(QContextMenuEvent *event)
     QObjectPtr<QMenu> menu{this->createStandardContextMenu(event->pos())};
     this->contextMenuRequested.invoke(menu.get(), event->pos());
     menu->exec(event->globalPos());
+}
+
+QString ResizingTextEdit::replaceFromWrongKeyboardLayout(
+    QString text, QLocale::Language fromLang, QLocale::Language toLang)
+{
+    static QMap<QLocale::Language, QString> completionLangs;
+    // Setted ";" as ":" to allow complete with "ж" like with "Ж".
+    completionLangs[QLocale::Russian] =
+        "йцукенгшщзхъ\\фывапролджэячсмитьбю.ёЙЦУКЕНГШЩЗХЪ/"
+        "ФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё!\"№;%:?*()_+";
+    completionLangs[QLocale::English] =
+        "qwertyuiop[]\\asdfghjkl:\"zxcvbnm,./"
+        "`QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<>?~!@#$%^&*()_+";
+
+    const auto s = completionLangs[fromLang];
+    const auto en = completionLangs[toLang];
+    auto newString = QString();
+
+    for (auto i = 0; i < text.length(); i++)
+    {
+        const auto index = s.indexOf(text[i]);
+        newString += index < 0 ? QString() : QString(en[index]);
+    }
+
+    return newString;
 }
 
 }  // namespace chatterino
