@@ -1739,7 +1739,7 @@ void ChannelView::handleMouseClick(QMouseEvent *event,
             if (link.type == Link::UserInfo)
             {
                 const bool commaMention = getSettings()->mentionUsersWithComma;
-                insertText("@" + link.value + (commaMention ? ", " : " "));
+                insertText(link.value + (commaMention ? ", " : " "));
             }
             else if (link.type == Link::UserWhisper)
             {
