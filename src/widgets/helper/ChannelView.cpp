@@ -2508,7 +2508,7 @@ void ChannelView::handleMouseClick(QMouseEvent *event,
                                 split->getInput().isEditFirstWord();
                             auto userMention = formatUserMention(
                                 link.value, isFirstWord, commaMention);
-                            insertText("@" + userMention + " ");
+                            insertText(userMention + " ");
                         }
                         break;
 
