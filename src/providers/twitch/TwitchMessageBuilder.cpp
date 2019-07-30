@@ -15,6 +15,7 @@
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
+#include "singletons/UsernameColors.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/IrcHelpers.hpp"
 #include "widgets/Window.hpp"
@@ -628,9 +629,15 @@ void TwitchMessageBuilder::appendChannelName()
 void TwitchMessageBuilder::parseUsername()
 {
     auto iterator = this->tags.find("color");
-    if (iterator != this->tags.end())
+    if (const auto color = iterator.value().toString(); !color.isEmpty())
     {
-        this->usernameColor_ = QColor(iterator.value().toString());
+        this->usernameColor_ = QColor(color);
+    }
+    else if (getSettings()->colorizeNicknames &&
+        this->tags.contains("user-id"))
+    {
+        const auto id = this->tags.value("user-id").toInt();
+        this->usernameColor_ = UsernameColors::getInstance().getColor(id);
     }
 
     // username

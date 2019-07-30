@@ -164,6 +164,7 @@ SOURCES += \
     src/singletons/Updates.cpp \
     src/singletons/WindowManager.cpp \
     src/singletons/TooltipPreviewImage.cpp \
+    src/singletons/UsernameColors.cpp \
     src/util/DebugCount.cpp \
     src/util/FormatTime.cpp \
     src/util/IncognitoBrowser.cpp \
@@ -340,6 +341,7 @@ HEADERS += \
     src/singletons/Toasts.hpp \
     src/singletons/Updates.hpp \
     src/singletons/WindowManager.hpp \
+    src/singletons/UsernameColors.hpp \
     src/util/ConcurrentMap.hpp \
     src/util/DebugCount.hpp \
     src/util/FormatTime.hpp \
