@@ -394,16 +394,20 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
     if (twitchChannel)
     {
-        menu->addAction(
+        auto subMenu = new QMenu("Open...", this);
+
+        subMenu->addAction(
             OPEN_IN_BROWSER, this->split_, &Split::openInBrowser,
             h->getDisplaySequence(HotkeyCategory::Split, "openInBrowser"));
 #ifndef USEWEBENGINE
-        menu->addAction(OPEN_PLAYER_IN_BROWSER, this->split_,
-                        &Split::openBrowserPlayer);
+        subMenu->addAction(OPEN_PLAYER_IN_BROWSER, this->split_,
+                           &Split::openBrowserPlayer);
 #endif
-        menu->addAction(
+        subMenu->addAction(
             OPEN_IN_STREAMLINK, this->split_, &Split::openInStreamlink,
             h->getDisplaySequence(HotkeyCategory::Split, "openInStreamlink"));
+
+        menu->addMenu(subMenu);
 
         if (!getSettings()->customURIScheme.getValue().isEmpty())
         {
@@ -515,7 +519,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
     if (twitchChannel)
     {
-        moreMenu->addAction(
+        menu->addAction(
             "Show viewer list", this->split_, &Split::showViewerList,
             h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"));
 
