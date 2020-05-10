@@ -19,6 +19,12 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
       fail-fast: false
 
+    env:
+      REMOTE_PASS: ${{ secrets.REMOTE_PASS }}
+      REMOTE_USER: ${{ secrets.REMOTE_USER }}
+      REMOTE_IP: ${{ secrets.REMOTE_IP }}
+      REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
+
     steps:
       - uses: actions/checkout@v2.3.3
         with:
@@ -42,6 +48,15 @@ jobs:
           # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
           extra: --external 7z
+
+      - name: Build go ssh
+        shell: bash
+        run: |
+            cd .github/go-helpers/go-ssh
+            go get github.com/pkg/sftp
+            go get golang.org/x/crypto/ssh
+            go build
+            mv go-ssh $GITHUB_WORKSPACE/
 
       # WINDOWS
       - name: Cache conan
@@ -82,9 +97,21 @@ jobs:
             7z a chatterino-windows-x86-64.zip Chatterino2/
         shell: cmd
 
-      - name: Upload artifact (Windows)
+      - name: Deploy (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: actions/upload-artifact@v2.2.0
+        env:
+          FILE_NAME: "chatterino2.zip"
+        run: |
+            cd %GITHUB_WORKSPACE%
+            cd build
+            7z a chatterino2.zip Chatterino2/
+
+            call ..\go-ssh
+        shell: cmd
+
+      - name: Upload artifact (Windows)
+        if: startsWith(matrix.os, 'windows') && false
+        uses: actions/upload-artifact@v1
         with:
           name: chatterino-windows-x86-64.zip
           path: build/chatterino-windows-x86-64.zip
@@ -110,9 +137,20 @@ jobs:
             sh ./../.CI/CreateAppImage.sh
         shell: bash
 
-      - name: Upload artifact (Ubuntu)
+      - name: Deploy (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@v2.2.0
+        env:
+          FILE_NAME: "chatterino2.AppImage"
+        run: |
+            cd build
+            cp Chatterino-x86_64.AppImage $FILE_NAME
+
+            ./../go-ssh
+        shell: bash
+
+      - name: Upload artifact (Ubuntu)
+        if: startsWith(matrix.os, 'ubuntu') && false
+        uses: actions/upload-artifact@v1
         with:
           name: Chatterino-x86_64.AppImage
           path: build/Chatterino-x86_64.AppImage
@@ -129,13 +167,14 @@ jobs:
         run: |
             mkdir build
             cd build
+            dateOfBuild="CHATTERINO_NIGHTLY_VERSION_STRING=\"\\\"$(date +%d.%m.%Y)\\\"\""
             /usr/local/opt/qt/bin/qmake .. DEFINES+=$dateOfBuild
             sed -ie 's/-framework\\\ /-framework /g' Makefile
             make -j8
         shell: bash
 
       - name: Package (MacOS)
-        if: startsWith(matrix.os, 'macos')
+        if: startsWith(matrix.os, 'macos') && false
         run: |
             ls -la
             pwd
@@ -144,12 +183,63 @@ jobs:
             sh ./../.CI/CreateDMG.sh
         shell: bash
 
-      - name: Upload artifact (MacOS)
+      - name: Deploy (MacOS)
         if: startsWith(matrix.os, 'macos')
-        uses: actions/upload-artifact@v2.2.0
+        env:
+          FILE_NAME: "chatterino2.dmg"
+        run: |
+            cd build
+
+            /usr/local/opt/qt/bin/macdeployqt chatterino.app -dmg
+            mkdir app
+            hdiutil attach chatterino.dmg
+            cp -r /Volumes/chatterino/chatterino.app app/
+            create-dmg \
+              --no-internet-enable \
+              --volname Chatterino2 \
+              --volicon ../resources/chatterino.icns \
+              --icon-size 50 \
+              --app-drop-link 0 0 \
+              --format UDBZ \
+              $FILE_NAME app/
+
+            ./../go-ssh
+
+            wget $REMOTE_IP/chatterino/index.html
+            sed -i .html -E "s/Updated on[a-zA-Z0-9 :-]+/Updated on $(date)/g" index.html
+            FILE_NAME="index.html"
+            ./../go-ssh
+        shell: bash
+
+      - name: Upload artifact (MacOS)
+        if: startsWith(matrix.os, 'macos') && false
+        uses: actions/upload-artifact@v1
         with:
           name: chatterino-osx.dmg
           path: build/chatterino-osx.dmg
+
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Commit message
+        run: echo ::set-env name=COMMIT_MESSAGE::$(git --no-pager log -1 | tail -n 1)
+      - name: Notify
+        env:
+          IRC_USER: ${{ secrets.IRC_USER }}
+          IRC_PASS: ${{ secrets.IRC_PASS }}
+          IRC_MESSAGE: ${{ secrets.IRC_MESSAGE }}
+          IRC_CHANNEL: ${{ secrets.IRC_CHANNEL }}
+        run: |
+            echo "MSG: $COMMIT_MESSAGE"
+
+            cd $GITHUB_WORKSPACE/.github/go-helpers/irc-notifier
+            go get github.com/gempir/go-twitch-irc
+            go build
+            ./irc-notifier
+
 
   create-release:
     needs: build
