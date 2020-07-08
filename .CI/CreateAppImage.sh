@@ -28,7 +28,7 @@ if [ ! -f "$linuxdeployqt_path" ]; then
     chmod a+x "$linuxdeployqt_path"
 fi
 if [ ! -f appimagetool-x86_64.AppImage ]; then
-    wget -nv "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+    wget -nv "https://github.com/AppImage/AppImageKit/releases/download/12/appimagetool-x86_64.AppImage"
     chmod a+x appimagetool-x86_64.AppImage
 fi
 ./"$linuxdeployqt_path" \
