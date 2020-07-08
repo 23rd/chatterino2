@@ -229,33 +229,25 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically)
             int arg;
             std::tie(action, arg) = item;
 
-            switch (action)
+            if (!this->channel_)
             {
-                case TimeoutWidget::Ban: {
-                    if (this->channel_)
-                    {
-                        this->channel_->sendMessage("/ban " + this->userName_);
-                    }
-                }
-                break;
-                case TimeoutWidget::Unban: {
-                    if (this->channel_)
-                    {
-                        this->channel_->sendMessage("/unban " +
-                                                    this->userName_);
-                    }
-                }
-                break;
-                case TimeoutWidget::Timeout: {
-                    if (this->channel_)
-                    {
-                        this->channel_->sendMessage("/timeout " +
-                                                    this->userName_ + " " +
-                                                    QString::number(arg));
-                    }
-                }
-                break;
+                return;
             }
+            const auto command = [&] {
+                const auto &user = this->userName_;
+                switch (action)
+                {
+                    case TimeoutWidget::Ban:
+                        return ("/ban " + user);
+                    case TimeoutWidget::Unban:
+                        return ("/unban " + user);
+                    case TimeoutWidget::Timeout:
+                        return QString("/timeout %1 %2").arg(user).arg(arg);
+                }
+                return QString();
+            }();
+            this->channel_->sendMessage(command);
+            this->deleteLater();
         });
     }
 
