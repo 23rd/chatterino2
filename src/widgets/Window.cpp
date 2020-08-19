@@ -423,14 +423,14 @@ void Window::onAccountSelected()
     QString windowTitle = Version::instance().fullVersion();
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
-    if (user->isAnon())
-    {
-        windowTitle += " - not logged in";
-    }
-    else
-    {
-        windowTitle += " - " + user->getUserName();
-    }
+    // if (user->isAnon())
+    // {
+    //     windowTitle += " - not logged in";
+    // }
+    // else
+    // {
+    //     windowTitle += " - " + user->getUserName();
+    // }
 #endif
 
     this->setWindowTitle(windowTitle);
