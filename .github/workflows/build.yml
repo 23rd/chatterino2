@@ -91,20 +91,7 @@ jobs:
             7z a chatterino-windows-x86-64.zip Chatterino2/
         shell: cmd
 
-      - name: Deploy (Windows)
-        if: startsWith(matrix.os, 'windows')
-        env:
-          FILE_NAME: "chatterino2.zip"
-        run: |
-            cd %GITHUB_WORKSPACE%
-            cd build
-            7z a chatterino2.zip Chatterino2/
-
-            call ..\go-ssh
-        shell: cmd
-
       - name: Upload artifact (Windows)
-        if: startsWith(matrix.os, 'windows') && false
         uses: actions/upload-artifact@v1
         with:
           name: chatterino-windows-x86-64.zip
@@ -131,19 +118,7 @@ jobs:
             sh ./../.CI/CreateAppImage.sh
         shell: bash
 
-      - name: Deploy (Ubuntu)
-        if: startsWith(matrix.os, 'ubuntu')
-        env:
-          FILE_NAME: "chatterino2.AppImage"
-        run: |
-            cd build
-            cp Chatterino-x86_64.AppImage $FILE_NAME
-
-            ./../go-ssh
-        shell: bash
-
       - name: Upload artifact (Ubuntu)
-        if: startsWith(matrix.os, 'ubuntu') && false
         uses: actions/upload-artifact@v1
         with:
           name: Chatterino-x86_64.AppImage
@@ -177,36 +152,7 @@ jobs:
             sh ./../.CI/CreateDMG.sh
         shell: bash
 
-      - name: Deploy (MacOS)
-        if: startsWith(matrix.os, 'macos')
-        env:
-          FILE_NAME: "chatterino2.dmg"
-        run: |
-            cd build
-
-            /usr/local/opt/qt/bin/macdeployqt chatterino.app -dmg
-            mkdir app
-            hdiutil attach chatterino.dmg
-            cp -r /Volumes/chatterino/chatterino.app app/
-            create-dmg \
-              --no-internet-enable \
-              --volname Chatterino2 \
-              --volicon ../resources/chatterino.icns \
-              --icon-size 50 \
-              --app-drop-link 0 0 \
-              --format UDBZ \
-              $FILE_NAME app/
-
-            ./../go-ssh
-
-            wget $REMOTE_IP/chatterino/index.html
-            sed -i .html -E "s/Updated on[a-zA-Z0-9 :-]+/Updated on $(date)/g" index.html
-            FILE_NAME="index.html"
-            ./../go-ssh
-        shell: bash
-
       - name: Upload artifact (MacOS)
-        if: startsWith(matrix.os, 'macos') && false
         uses: actions/upload-artifact@v1
         with:
           name: chatterino-osx.dmg
