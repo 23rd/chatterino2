@@ -609,20 +609,16 @@ void Split::updateInputPlaceholder()
     {
         return;
     }
+    auto &twitchController = getApp()->accounts->twitch;
+    auto user = twitchController.getCurrent();
 
-    auto user = getApp()->accounts->twitch.getCurrent();
-    QString placeholderText;
-
-    if (user->isAnon())
-    {
-        placeholderText = "Log in to send messages...";
-    }
-    else
-    {
-        placeholderText =
-            QString("Send message as %1...")
-                .arg(getApp()->accounts->twitch.getCurrent()->getUserName());
-    }
+    const auto placeholderText = [&]() -> QString {
+        return user->isAnon() ? "Log in to send messages..."
+               : (twitchController.getUsernames().size() > 1)
+                   ? QString("Send message as %1...")
+                         .arg(twitchController.getCurrent()->getUserName())
+                   : "";
+    }();
 
     this->input_->ui_.textEdit->setPlaceholderText(placeholderText);
 }
