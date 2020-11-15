@@ -811,6 +811,10 @@ void Split::updateInputPlaceholder()
                                        ->twitch.getCurrent()
                                        ->getUserName());
     }
+    if (getApp()->getAccounts()->twitch.getUsernames().size() == 1)
+    {
+        placeholderText = "";
+    }
 
     this->input_->ui_.textEdit->setPlaceholderText(placeholderText);
 }
