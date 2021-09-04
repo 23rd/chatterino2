@@ -206,7 +206,7 @@ EmotePopup::EmotePopup(QWidget *parent)
     , search_(new QLineEdit())
     , notebook_(new Notebook(this))
 {
-    this->setStayInScreenRect(true);
+    // this->setStayInScreenRect(true);
     this->moveTo(this, getApp()->windows->emotePopupPos(), false);
 
     auto *layout = new QVBoxLayout(this);
