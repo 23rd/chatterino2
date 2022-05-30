@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - reply-threads
   pull_request:
 
 concurrency: 
