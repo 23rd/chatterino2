@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - small-qt-5_15_3
   pull_request:
 
 concurrency: 
