@@ -63,7 +63,7 @@ Notes:
 ### When prompted which components to install:
 
 1. Unfold the tree element that says "Qt"
-2. Unfold the top most tree element (latest stable Qt version, e.g. `Qt 5.15.2`)
+2. Unfold the top most tree element (latest stable Qt version, e.g. `Qt 5.15.3`)
 3. Under this version, select the following entries:
    - `MSVC 2019 64-bit` (or alternative version if you are using that)
    - `Qt WebEngine` (optional)
@@ -92,7 +92,7 @@ Compiling with Breakpad support enables crash reports that can be of use for dev
 - In the main screen, click the green "play symbol" on the bottom left to run the project directly.
 - Click the hammer on the bottom left to generate a build (does not run the build though).
 
-Build results will be placed in a folder at the same level as the "chatterino2" project folder (e.g. if your sources are at `C:\Users\example\src\chatterino2`, then the build will be placed in an automatically generated folder under `C:\Users\example\src`, e.g. `C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_2_MSVC2019_64bit-Release`.)
+Build results will be placed in a folder at the same level as the "chatterino2" project folder (e.g. if your sources are at `C:\Users\example\src\chatterino2`, then the build will be placed in an automatically generated folder under `C:\Users\example\src`, e.g. `C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_3_MSVC2019_64bit-Release`.)
 
 - Note that if you are building chatterino purely for usage, not for development, it is recommended that you click the "PC" icon above the play icon and select "Release" instead of "Debug".
 - Output and error messages produced by the compiler can be seen under the "4 Compile Output" tab in Qt Creator.
@@ -101,17 +101,17 @@ Build results will be placed in a folder at the same level as the "chatterino2" 
 
 If you build chatterino, the result directories will contain a `chatterino.exe` file in the `$OUTPUTDIR\release\` directory. This `.exe` file will not directly run on any given target system, because it will be lacking various Qt runtimes.
 
-To produce a standalone package, you need to generate all required files using the tool `windeployqt`. This tool can be found in the `bin` directory of your Qt installation, e.g. at `C:\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe`.
+To produce a standalone package, you need to generate all required files using the tool `windeployqt`. This tool can be found in the `bin` directory of your Qt installation, e.g. at `C:\Qt\5.15.3\msvc2019_64\bin\windeployqt.exe`.
 
 To produce all supplement files for a standalone build, follow these steps (adjust paths as required):
 
-1.  Navigate to your build output directory with Windows Explorer, e.g. `C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_2_MSVC2019_64bit-Release`
+1.  Navigate to your build output directory with Windows Explorer, e.g. `C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_3_MSVC2019_64bit-Release`
 2.  Enter the `release` directory
 3.  Delete all files except the `chatterino.exe` file. You should be left with a directory only containing `chatterino.exe`.
 4.  Open a command prompt and execute:
 
-        cd C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_2_MSVC2019_64bit-Release\release
-        C:\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe chatterino.exe
+        cd C:\Users\example\src\build-chatterino-Desktop_Qt_5_15_3_MSVC2019_64bit-Release\release
+        C:\Qt\5.15.3\msvc2019_64\bin\windeployqt.exe chatterino.exe
 
 5.  Go to `C:\local\bin\` and copy these dll's into your `release folder`.
 
@@ -147,7 +147,7 @@ Clone the repository as described in the readme. Open a terminal in the cloned f
 Now open the project in CLion. You will be greeted with the _Open Project Wizard_. Set the _CMake Options_ to
 
 ```
--DCMAKE_PREFIX_PATH=C:\Qt\5.15.2\msvc2019_64\lib\cmake\Qt5
+-DCMAKE_PREFIX_PATH=C:\Qt\5.15.3\msvc2019_64\lib\cmake\Qt5
 -DUSE_CONAN=ON
 -DCMAKE_CXX_FLAGS=/bigobj
 ```
@@ -165,7 +165,7 @@ After the CMake project is loaded, open the _Run/Debug Configurations_.
 
 Select the `CMake Applications > chatterino` configuration and add a new _Run External tool_ task to _Before launch_.
 
-- Set the _Program_ to `C:\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe`
+- Set the _Program_ to `C:\Qt\5.15.3\msvc2019_64\bin\windeployqt.exe`
 - Set the _Arguments_
   to `$CMakeCurrentProductFile$ --debug --no-compiler-runtime --no-translations --no-opengl-sw --dir bin/`
 - Set the _Working directory_ to `$ProjectFileDir$\build`

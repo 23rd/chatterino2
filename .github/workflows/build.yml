@@ -17,12 +17,12 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        qt-version: [5.15.2, 5.12.10]
+        qt-version: [5.15.3, 5.12.10]
         build-system: [qmake, cmake]
         pch: [true]
         include:
           - os: ubuntu-latest
-            qt-version: 5.15.2
+            qt-version: 5.15.3
             build-system: cmake
             pch: false
       fail-fast: false
@@ -269,42 +269,42 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: chatterino-windows-x86-64-5.15.2-qmake.zip
+          name: chatterino-windows-x86-64-5.15.3-qmake.zip
           path: windows/
 
       - uses: actions/download-artifact@v3
         with:
-          name: chatterino-windows-x86-64-5.15.2-cmake.zip
+          name: chatterino-windows-x86-64-5.15.3-cmake.zip
           path: windows-cmake/
 
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-x86_64-5.15.2-qmake.AppImage
+          name: Chatterino-x86_64-5.15.3-qmake.AppImage
           path: linux/
 
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-x86_64-5.15.2-cmake.AppImage
+          name: Chatterino-x86_64-5.15.3-cmake.AppImage
           path: linux-cmake/
 
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-5.15.2-qmake.deb
+          name: Chatterino-5.15.3-qmake.deb
           path: ubuntu/
 
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-5.15.2-cmake.deb
+          name: Chatterino-5.15.3-cmake.deb
           path: ubuntu-cmake/
 
       - uses: actions/download-artifact@v3
         with:
-          name: chatterino-osx-5.15.2-qmake.dmg
+          name: chatterino-osx-5.15.3-qmake.dmg
           path: macos/
 
       - uses: actions/download-artifact@v3
         with:
-          name: chatterino-osx-5.15.2-cmake.dmg
+          name: chatterino-osx-5.15.3-cmake.dmg
           path: macos-cmake/
 
       # TODO: Extract dmg and appimage
