@@ -98,7 +98,7 @@ namespace log {
         chatterinowebsocketpplogger<concurrency, names> &operator=(
             chatterinowebsocketpplogger<concurrency, names> &&) = delete;
 #    endif  // _WEBSOCKETPP_DEFAULT_DELETE_FUNCTIONS_
-#endif      // _WEBSOCKETPP_MOVE_SEMANTICS_
+#endif  // _WEBSOCKETPP_MOVE_SEMANTICS_
 
         /// Explicitly do nothing, this logger doesn't support changing ostream
         void set_ostream(std::ostream *)

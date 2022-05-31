@@ -319,7 +319,7 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *_message,
                 if (snapshot[i]->id == replyID)
                 {
                     // Found root reply message
-                    std::shared_ptr<MessageThread> newThread =
+                    const auto newThread =
                         std::make_shared<MessageThread>(snapshot[i]);
 
                     // Store weak reference to thread
