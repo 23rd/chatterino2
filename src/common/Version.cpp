@@ -61,6 +61,8 @@ const QString &Version::fullVersion() const
 
 const QString &Version::commitHash() const
 {
+    static const auto kEmpty = QString();
+    return kEmpty;
     return this->commitHash_;
 }
 
