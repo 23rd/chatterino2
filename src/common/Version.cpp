@@ -65,6 +65,7 @@ const QString &Version::fullVersion() const
 
 const QString &Version::commitHash() const
 {
+    return QString();
     return this->commitHash_;
 }
 
