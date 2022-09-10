@@ -40,6 +40,9 @@ protected:
     bool canInsertFromMimeData(const QMimeData *source) const override;
     void insertFromMimeData(const QMimeData *source) override;
 
+    void mousePressEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
+
 private:
     // hadSpace is set to true in case the "textUnderCursor" word was after a
     // space
