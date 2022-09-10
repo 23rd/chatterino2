@@ -887,6 +887,11 @@ void EmotePopup::reloadEmotes()
             twitchChannel_->getName());
 
         // channel
+        if (getSettings()->enableSevenTVChannelEmotes)
+        {
+            addEmotes(*channelChannel, *this->twitchChannel_->seventvEmotes(),
+                      "7TV");
+        }
         if (getSettings()->enableBTTVChannelEmotes)
         {
             addEmotes(*channelChannel, *this->twitchChannel_->bttvEmotes(),
@@ -896,11 +901,6 @@ void EmotePopup::reloadEmotes()
         {
             addEmotes(*channelChannel, *this->twitchChannel_->ffzEmotes(),
                       "FrankerFaceZ");
-        }
-        if (getSettings()->enableSevenTVChannelEmotes)
-        {
-            addEmotes(*channelChannel, *this->twitchChannel_->seventvEmotes(),
-                      "7TV");
         }
     }
     // global
