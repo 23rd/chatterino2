@@ -35,6 +35,30 @@ QSize ResizingTextEdit::sizeHint() const
     return QSize(this->width(), this->heightForWidth(this->width()));
 }
 
+void ResizingTextEdit::mousePressEvent(QMouseEvent *event)
+{
+    this->update();
+
+    switch (event->button())
+    {
+        case Qt::RightButton: {
+            auto e = QContextMenuEvent(
+                QContextMenuEvent::Mouse,
+                event->globalPos() + QPoint(0, 8));
+            QTextEdit::contextMenuEvent(&e);
+        }
+        break;
+        default: {
+            QTextEdit::mousePressEvent(event);
+        }
+        break;
+    }
+}
+
+void ResizingTextEdit::contextMenuEvent(QContextMenuEvent *event)
+{
+}
+
 bool ResizingTextEdit::hasHeightForWidth() const
 {
     return true;
