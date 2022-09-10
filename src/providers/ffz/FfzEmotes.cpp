@@ -262,6 +262,9 @@ void FfzEmotes::loadChannel(
     std::function<void(FfzChannelBadgeMap &&)> channelBadgesCallback,
     bool manualRefresh)
 {
+    if (channelID.isEmpty()) {
+        return;
+    }
     qCDebug(LOG) << "Reload FFZ Channel Emotes for channel" << channelID;
 
     NetworkRequest("https://api.frankerfacez.com/v1/room/id/" + channelID)
