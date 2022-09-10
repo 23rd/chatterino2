@@ -228,6 +228,9 @@ void FfzEmotes::loadChannel(
     std::function<void(boost::optional<EmotePtr>)> vipBadgeCallback,
     bool manualRefresh)
 {
+    if (channelId.isEmpty()) {
+        return;
+    }
     qCDebug(chatterinoFfzemotes)
         << "[FFZEmotes] Reload FFZ Channel Emotes for channel" << channelId;
 
