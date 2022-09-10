@@ -50,6 +50,38 @@ QSize ResizingTextEdit::sizeHint() const
     return QSize(this->width(), this->heightForWidth(this->width()));
 }
 
+void ResizingTextEdit::mousePressEvent(QMouseEvent *event)
+{
+    this->update();
+
+    switch (event->button())
+    {
+        case Qt::RightButton: {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            auto globalPos = event->globalPosition().toPoint();
+            auto localPos = event->position().toPoint();
+#else
+            auto globalPos = event->globalPos();
+            auto localPos = event->pos();
+#endif
+            auto e = QContextMenuEvent(
+                QContextMenuEvent::Mouse,
+                localPos,
+                globalPos + QPoint(0, 8));
+            QTextEdit::contextMenuEvent(&e);
+        }
+        break;
+        default: {
+            QTextEdit::mousePressEvent(event);
+        }
+        break;
+    }
+}
+
+void ResizingTextEdit::contextMenuEvent(QContextMenuEvent *event)
+{
+}
+
 bool ResizingTextEdit::hasHeightForWidth() const
 {
     return true;
