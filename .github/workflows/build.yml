@@ -33,6 +33,7 @@ jobs:
         plugins: [false]
         skip_artifact: ["no"]
         crashpad: [true]
+        arch: [x86_64]
         include:
           # Ubuntu 20.04, Qt 5.12
           - os: ubuntu-20.04
@@ -178,6 +179,7 @@ jobs:
               -DCHATTERINO_LTO="$Env:C2_ENABLE_LTO" `
               -DCHATTERINO_PLUGINS="$Env:C2_PLUGINS" `
               -DBUILD_WITH_QT6="$Env:C2_BUILD_WITH_QT6" `
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} `
               ..
           set cl=/MP
           nmake /S /NOLOGO
@@ -265,6 +267,7 @@ jobs:
             -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
             -DCHATTERINO_PLUGINS="$C2_PLUGINS" \
             -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             ..
           make -j"$(nproc)"
         shell: bash
@@ -300,15 +303,15 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-20.04') && matrix.skip_artifact != 'yes'
         uses: actions/upload-artifact@v3
         with:
-          name: Chatterino-x86_64-${{ matrix.qt-version }}.AppImage
-          path: build/Chatterino-x86_64.AppImage
+          name: Chatterino-${{ matrix.arch }}-${{ matrix.qt-version }}.AppImage
+          path: build/Chatterino-${{ matrix.arch }}.AppImage
 
       - name: Upload artifact - .deb (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu') && matrix.skip_artifact != 'yes'
         uses: actions/upload-artifact@v3
         with:
           name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
-          path: build/Chatterino-${{ matrix.os }}-x86_64.deb
+          path: build/Chatterino-${{ matrix.os }}-${{ matrix.arch }}.deb
 
       # MACOS
       - name: Install dependencies (MacOS)
@@ -330,6 +333,7 @@ jobs:
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
               -DCHATTERINO_PLUGINS="$C2_PLUGINS" \
               -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
               ..
           make -j"$(sysctl -n hw.logicalcpu)"
         shell: bash
@@ -370,7 +374,7 @@ jobs:
           name: chatterino-macos-Qt-${{ matrix.qt-version }}.dmg
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-x86_64-5.12.12.AppImage
+          name: Chatterino-${{ matrix.arch }}-5.12.12.AppImage
       - uses: actions/download-artifact@v3
         with:
           name: chatterino-windows-x86-64-${{ env.QT_VER }}.zip
@@ -447,7 +451,7 @@ jobs:
           fetch-depth: 0 # allows for tags access
 
       - uses: actions/download-artifact@v3
-        name: macOS x86_64 Qt6.5.0 dmg
+        name: macOS ${{ matrix.arch }} Qt6.5.0 dmg
         with:
           name: chatterino-macos-Qt-6.5.0.dmg
           path: release-artifacts/
@@ -475,7 +479,7 @@ jobs:
           ls -l
           # Mark all Qt6 builds as EXPERIMENTAL
           mv chatterino-macos-Qt-6.5.0.dmg EXPERIMENTAL-chatterino-macos-Qt-6.5.0-dmg
-          mv Chatterino-ubuntu-22.04-x86_64.deb EXPERIMENTAL-Chatterino-ubuntu-22.04-Qt-6.2.4.deb
+          mv Chatterino-ubuntu-22.04-${{ matrix.arch }}.deb EXPERIMENTAL-Chatterino-ubuntu-22.04-Qt-6.2.4.deb
           mv chatterino-windows-x86-64-Qt-6.5.0.zip EXPERIMENTAL-chatterino-windows-x86-64-Qt-6.5.0.zip
           mv chatterino-Qt-6.5.0.pdb.7z EXPERIMENTAL-chatterino-Qt-6.5.0.pdb.7z
         working-directory: release-artifacts
@@ -496,7 +500,7 @@ jobs:
       - uses: actions/download-artifact@v3
         name: Linux Qt5.12.12 AppImage
         with:
-          name: Chatterino-x86_64-5.12.12.AppImage
+          name: Chatterino-${{ matrix.arch }}-5.12.12.AppImage
           path: release-artifacts/
 
       - uses: actions/download-artifact@v3
@@ -512,7 +516,7 @@ jobs:
           path: release-artifacts/
 
       - uses: actions/download-artifact@v3
-        name: macOS x86_64 Qt5.15.2 dmg
+        name: macOS ${{ matrix.arch }} Qt5.15.2 dmg
         with:
           name: chatterino-macos-Qt-5.15.2.dmg
           path: release-artifacts/
