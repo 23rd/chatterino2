@@ -29,6 +29,7 @@ jobs:
         force-lto: [false]
         skip_artifact: ["no"]
         crashpad: [true]
+        arch: [x86_64]
         include:
           # Ubuntu 20.04, Qt 5.12
           - os: ubuntu-20.04
@@ -154,6 +155,7 @@ jobs:
               -DBUILD_WITH_CRASHPAD="$Env:C2_ENABLE_CRASHPAD" `
               -DCHATTERINO_LTO="$Env:C2_ENABLE_LTO" `
               -DBUILD_WITH_QT6="$Env:C2_BUILD_WITH_QT6" `
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} `
               ..
           set cl=/MP
           nmake /S /NOLOGO
@@ -240,6 +242,7 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=On \
             -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
             -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             ..
           make -j"$(nproc)"
         shell: bash
@@ -280,15 +283,15 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-20.04') && matrix.skip_artifact != 'yes'
         uses: actions/upload-artifact@v3
         with:
-          name: Chatterino-x86_64-${{ matrix.qt-version }}.AppImage
-          path: build/Chatterino-x86_64.AppImage
+          name: Chatterino-${{ matrix.arch }}-${{ matrix.qt-version }}.AppImage
+          path: build/Chatterino-${{ matrix.arch }}.AppImage
 
       - name: Upload artifact - .deb (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu') && matrix.skip_artifact != 'yes'
         uses: actions/upload-artifact@v3
         with:
           name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
-          path: build/Chatterino-${{ matrix.os }}-x86_64.deb
+          path: build/Chatterino-${{ matrix.os }}-${{ matrix.arch }}.deb
 
       # MACOS
       - name: Install dependencies (MacOS)
@@ -309,6 +312,7 @@ jobs:
               -DUSE_PRECOMPILED_HEADERS=${{ matrix.pch }} \
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
               -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
               ..
           make -j"$(sysctl -n hw.logicalcpu)"
         shell: bash
@@ -351,7 +355,7 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: Chatterino-x86_64-5.12.12.AppImage
+          name: Chatterino-${{ matrix.arch }}-5.12.12.AppImage
           path: release-artifacts/
 
       - uses: actions/download-artifact@v3
