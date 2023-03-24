@@ -307,12 +307,19 @@ jobs:
           brew install boost openssl rapidjson p7zip create-dmg cmake tree
         shell: bash
 
+      - name: Lookup (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          find /usr/local/Cellar/boost/1.81.0_1 | grep asio
+        shell: bash
+
       - name: Build (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
           mkdir build
           cd build
           cmake \
+              -DCMAKE_PREFIX_PATH=/usr/local/Cellar/boost/1.81.0_1/include/ \
               -DCMAKE_BUILD_TYPE=Release \
               -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl \
               -DUSE_PRECOMPILED_HEADERS=${{ matrix.pch }} \
