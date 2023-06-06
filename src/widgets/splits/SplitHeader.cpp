@@ -34,6 +34,7 @@
 #include <QMenu>
 #include <QMimeData>
 #include <QPainter>
+#include <QProcess>
 
 #include <cmath>
 
@@ -931,6 +932,20 @@ void SplitHeader::mousePressEvent(QMouseEvent *event)
         break;
 
         case Qt::MiddleButton: {
+            const auto customBash = QString(getSettings()->customBashRunFile);
+            if (!customBash.isEmpty()) {
+                auto *channel = this->split_->getChannel().get();
+                if (channel->getType() == Channel::Type::Twitch)
+                {
+                    const auto t = dynamic_cast<TwitchChannel *>(channel);
+                    const auto name = t->channelUrl().split("/").back();
+                    auto process = QProcess(this);
+                    process.startDetached(
+                        QString("zsh"),
+                        QStringList() << customBash << name);
+                    return;
+                }
+            }
             this->split_->openInBrowser();
         }
         break;

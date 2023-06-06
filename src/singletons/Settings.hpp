@@ -502,6 +502,7 @@ public:
 
     // Custom URI Scheme
     QStringSetting customURIScheme = {"/external/urischeme"};
+    QStringSetting customBashRunFile = {"/external/customBashRunFile"};
 
     // Image Uploader
     BoolSetting imageUploaderEnabled = {"/external/imageUploader/enabled",
