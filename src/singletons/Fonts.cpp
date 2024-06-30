@@ -136,10 +136,22 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
                   int(settings->chatFontSize.getValue() * data.scale * scale),
                   data.weight, data.italic));
     }
+#ifdef Q_OS_MAC
+    constexpr float multiplier = 1.f;
+#endif
 
     // normal Ui font (use pt size)
     {
         static std::unordered_map<FontStyle, UiFontData> defaultSize{
+#ifdef Q_OS_MAC
+            {FontStyle::Tiny, {10, "Monospace", false, QFont::Normal}},
+            {FontStyle::UiMedium,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
+            {FontStyle::UiMediumBold,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Bold}},
+            {FontStyle::UiTabs,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
+#else
             {
                 FontStyle::Tiny,
                 {
@@ -176,6 +188,7 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
                     QFont::Normal,
                 },
             },
+#endif
         };
 
         UiFontData &data = defaultSize[type];
