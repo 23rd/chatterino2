@@ -234,6 +234,10 @@ int NotebookTab::normalTabWidthForHeight(int height) const
 
     QFontMetrics metrics =
         getApp()->getFonts()->getFontMetrics(FontStyle::UiTabs, scale);
+#ifdef Q_OS_MAC
+    return metrics.horizontalAdvance(this->getTitle())
+        + int(((this->getTitle().size() < 5) ? 16 : 0) * scale);
+#endif
 
     float compactDivider = getCompactDivider(getSettings()->tabStyle);
     if (this->hasXButton())
