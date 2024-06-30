@@ -255,6 +255,9 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
         default:
             break;
     }
+#ifdef Q_OS_MAC
+    constexpr float multiplier = 1.f;
+#endif
 
     // If the requested font is not available, trigger
     // automatic substitution by the closest font
