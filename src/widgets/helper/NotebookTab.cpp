@@ -200,6 +200,10 @@ int NotebookTab::normalTabWidthForHeight(int height) const
 
     QFontMetrics metrics =
         getApp()->getFonts()->getFontMetrics(FontStyle::UiTabs, scale);
+#ifdef Q_OS_MAC
+    return metrics.horizontalAdvance(this->getTitle())
+        + int(((this->getTitle().size() < 5) ? 16 : 0) * scale);
+#endif
 
     if (this->hasXButton())
     {
@@ -564,7 +568,11 @@ void NotebookTab::paintEvent(QPaintEvent *)
     QRect rect(0, 0, this->width() - rectW, height);
 
     // draw text
+#ifdef Q_OS_MAC
+    int offset = int(scale * ((this->getTitle().size() < 5) ? 8 : 0));
+#else
     int offset = int(scale * 8);
+#endif
     QRect textRect(offset, 0, this->width() - offset - offset, height);
     translateRectForLocation(textRect, this->tabLocation_,
                              this->selected_ ? -1 : -2);

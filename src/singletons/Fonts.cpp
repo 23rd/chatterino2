@@ -146,6 +146,15 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
 #endif
 
         static std::unordered_map<FontStyle, UiFontData> defaultSize{
+#ifdef Q_OS_MAC
+            {FontStyle::Tiny, {10, "Monospace", false, QFont::Normal}},
+            {FontStyle::UiMedium,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
+            {FontStyle::UiMediumBold,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Bold}},
+            {FontStyle::UiTabs,
+             {int(14 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
+#else
             {FontStyle::Tiny, {8, "Monospace", false, QFont::Normal}},
             {FontStyle::UiMedium,
              {int(9 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
@@ -153,6 +162,7 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
              {int(9 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Bold}},
             {FontStyle::UiTabs,
              {int(9 * multiplier), DEFAULT_FONT_FAMILY, false, QFont::Normal}},
+#endif
         };
 
         UiFontData &data = defaultSize[type];
