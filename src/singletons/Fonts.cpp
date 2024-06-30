@@ -255,6 +255,9 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
         default:
             break;
     }
+#ifdef Q_OS_MAC
+    constexpr float multiplier = 1.f;
+#endif
 
     return font;
 }
