@@ -1,0 +1,75 @@
+name: Download Nightly Build Assets and Upload
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  download-assets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get latest nightly build release
+        id: get_release
+        run: |
+          release=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/nightly-build")
+          echo "::set-output name=release_id::$(echo $release | jq -r '.id')"
+          echo "::set-output name=assets::$(echo $release | jq -r '.assets | map(.url) | join(",")')"
+
+      - name: Download assets
+        if: steps.get_release.outputs.release_id != ''
+        run: |
+          IFS=',' read -r -a urls <<< "${{ steps.get_release.outputs.assets }}"
+          for url in "${urls[@]}"; do
+            echo "Downloading asset from $url"
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -O "$url"
+          done
+
+      - name: Upload assets to server
+        if: steps.get_release.outputs.release_id != ''
+        env:
+          RSYNC_PASSWORD: ${{ secrets.RSYNC_PASSWORD }} # Set this in your repository secrets
+        run: |
+          # Ensure the assets are in a directory
+          mkdir -p assets
+          mv *.zip assets/ # Move downloaded assets to a specific directory (adjust as needed)
+
+          # Use rsync to upload to the server
+          rsync -avz --progress -e "sshpass -e ssh -o StrictHostKeyChecking=no" assets/ user@${{ secrets.SERVER_IP }}:/var/www/html/chatterino
+
+          # Path to the source template file and the target output file
+          template_file="template.html"
+          output_file="index.html"
+
+          curl -O ${template_file} {{ secrets.SERVER_IP }}/chatterino/${template_file}
+
+          # Create a temporary file for the HTML list
+          temp_html_list=$(mktemp)
+
+          # Create the HTML list of files
+          echo "<ul>" > "$temp_html_list"
+          echo "<li>Updated on $(date)</li>" >> "$temp_html_list"
+          echo "<li><br></li>" >> "$temp_html_list"
+
+          # Iterate over all files in the current directory
+          for file in *; do
+              if [ -f "$file" ]; then
+                  echo "<li><a href=\"./$file\">$file</a></li>" >> "$temp_html_list"
+                  echo "<li><br></li>" >> "$temp_html_list"
+              fi
+          done
+
+          echo "</ul>" >> "$temp_html_list"
+
+          # Replace MY_TEMPLATE in the template with the created HTML list
+          sed "s|MY_TEMPLATE|$(cat "$temp_html_list")|g" "$template_file" > "$output_file"
+
+          # Send the file using rsync
+          rsync -avz --progress -e "sshpass -e ssh -o StrictHostKeyChecking=no" "$output_file" user@${{ secrets.SERVER_IP }}:/var/www/html/chatterino
+
+          # Remove the temporary file
+          rm "$temp_html_list"
+
+          echo "The index.html file has been successfully updated and sent."

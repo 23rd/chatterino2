@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - dev
       - "bugfix-release/*"
       - "release/*"
   pull_request:
