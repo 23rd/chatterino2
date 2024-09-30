@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - dev
       - "bugfix-release/*"
       - "release/*"
   pull_request:
@@ -389,3 +390,84 @@ jobs:
           git tag -f nightly-build
           git push -f origin nightly-build
         shell: bash
+
+  deploy:
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    steps:
+      - uses: robinraju/release-downloader@v1
+        with:
+          tag: 'nightly-build'
+          fileName: '*'
+          out-file-path: 'myassets'
+
+      - name: Upload assets to server
+        env:
+          RSYNC_PASSWORD: ${{ secrets.RSYNC_PASSWORD }} # Set this in your repository secrets
+          SSHPASS: ${{ secrets.RSYNC_PASSWORD }} # Use the same password for sshpass
+        run: |
+          cd myassets
+
+          rm *flatpakref*
+          rm *pdb*
+
+          # Use rsync to upload to the server
+          rsync -avz --progress -e "sshpass -e ssh -o StrictHostKeyChecking=no" ./* root@${{ secrets.SERVER_IP }}:/var/www/html/chatterino/
+
+          # Path to the source template file and the target output file
+          template_file="template.html"
+          output_file="index.html"
+
+          wget -O ${template_file} ${{ secrets.SERVER_IP }}/chatterino/${template_file}
+
+          # Create a temporary file for the HTML list
+          temp_html_list=$(mktemp)
+
+          # Create the HTML list of files
+          echo "<ul>" > "$temp_html_list"
+          echo "<li>Updated on $(date)</li>" >> "$temp_html_list"
+
+          # Iterate over all files in the current directory
+          for file in $(ls -1 . | grep -v -E "pdb|flatpakref|html" | tac); do
+              echo "<li><a href=\"./$file\">$file</a></li>" >> "$temp_html_list"
+          done
+
+          echo "</ul>" >> "$temp_html_list"
+
+          # Read the content of the template file into a variable
+          template_content=$(<"$template_file")
+
+          # Read the HTML list into a variable
+          html_content=$(<"$temp_html_list")
+
+          # Replace MY_TEMPLATE with the HTML list in the template content
+          output_content="${template_content//MY_TEMPLATE/$html_content}"
+
+          # Write the output content to the output file
+          echo "$output_content" > "$output_file"
+
+          # Send the file using rsync
+          rsync -avz --progress -e "sshpass -e ssh -o StrictHostKeyChecking=no" "$output_file" root@${{ secrets.SERVER_IP }}:/var/www/html/chatterino/
+
+          # Remove the temporary file
+          rm "$temp_html_list"
+
+          echo "The index.html file has been successfully updated and sent."
+
+      - name: Notify
+        run: |
+          JSON_PAYLOAD=$(cat <<EOF
+          {
+              "broadcaster_id": "${{ secrets.IRC_CHANNEL_ID }}",
+              "sender_id": "${{ secrets.IRC_USER_ID }}",
+              "message": "${{ secrets.IRC_MESSAGE }}"
+          }
+          EOF
+          )
+
+          curl -X POST "https://api.twitch.tv/helix/chat/messages" \
+          -H "Authorization: Bearer ${{ secrets.OAUTH_TOKEN }}" \
+          -H "Client-ID: ${{ secrets.CLIENT_ID }}" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_PAYLOAD"
