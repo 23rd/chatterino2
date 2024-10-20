@@ -463,8 +463,15 @@ ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData)
             baseWidth = width;
         }
 
+        auto result = QString("https:%1/%2").arg(baseUrl, file["name"].toString());
+        if (getSettings()->sevenTvProxy) {
+            result.replace(
+              "https://cdn.7tv.app",
+              u"proxy_placeholder"_s);
+        }
+
         auto image = Image::fromUrl(
-            {QString("https:%1/%2").arg(baseUrl, file["name"].toString())},
+            {result},
             scale, {static_cast<int>(width), file["height"].toInt(16)});
 
         sizes.at(nextSize) = image;
