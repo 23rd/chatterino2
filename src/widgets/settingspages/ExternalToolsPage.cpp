@@ -24,6 +24,14 @@ ExternalToolsPage::ExternalToolsPage()
     removeScrollAreaBackground(scroll.getElement(), widget.getElement());
 
     auto layout = widget.setLayoutType<QVBoxLayout>();
+    {
+        auto group = layout.emplace<QGroupBox>("7tv Proxy");
+        auto groupLayout = group.setLayoutType<QFormLayout>();
+
+        auto *sevenTvProxy =
+            this->createCheckBox("Use 7tv proxy", getSettings()->sevenTvProxy);
+        groupLayout->setWidget(0, QFormLayout::SpanningRole, sevenTvProxy);
+    }
 
     {
         auto group = layout.emplace<QGroupBox>("Streamlink");
