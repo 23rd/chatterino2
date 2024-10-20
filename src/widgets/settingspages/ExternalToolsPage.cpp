@@ -117,6 +117,12 @@ void ExternalToolsPage::initLayout(GeneralPageView &layout)
     auto &s = *getSettings();
 
     {
+        layout.addTitle("7tv Proxy");
+
+        SettingWidget::checkbox("Use 7tv proxy", s.sevenTvProxy)->addTo(layout);
+    }
+
+    {
         auto *form = new QFormLayout;
         layout.addTitle("Streamlink");
         layout.addDescription("Streamlink is a command-line utility that pipes "
