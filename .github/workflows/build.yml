@@ -66,6 +66,8 @@ jobs:
 
       - name: Fix git permission error
         run: |
+          find . -name "SeventvAPI.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "SeventvEmotes.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
           git config --global --add safe.directory '*'
 
       - name: Install Python and libclang (24.04)
@@ -152,6 +154,20 @@ jobs:
           cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
           modules: qtimageformats
           version: ${{ matrix.qt-version }}
+
+      - name: Set proxy.
+        if: startsWith(matrix.os, 'linux') || startsWith(matrix.os, 'windows')
+        run: |
+          find . -name "SeventvAPI.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "SeventvEmotes.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+        shell: bash
+
+      - name: Set proxy.
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          find . -name "SeventvAPI.cpp" -exec sed -i '' "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "SeventvEmotes.cpp" -exec sed -i '' "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+        shell: bash
 
       # WINDOWS
       - name: Enable Developer Command Prompt (Windows)

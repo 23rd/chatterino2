@@ -650,6 +650,8 @@ public:
     QStringSetting imageUploaderDeletionLink = {
         "/external/imageUploader/deletionLink", ""};
 
+    BoolSetting sevenTvProxy = {"/external/streamlink/sevenTvProxy", true};
+
     /// Misc
     BoolSetting betaUpdates = {"/misc/beta", false};
 #ifdef Q_OS_LINUX

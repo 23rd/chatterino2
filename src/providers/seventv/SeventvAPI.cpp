@@ -3,6 +3,7 @@
 #include "common/Literals.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "singletons/Settings.hpp"
 
 namespace {
 
@@ -11,6 +12,9 @@ using namespace chatterino::literals;
 const QString API_URL_USER = u"https://7tv.io/v3/users/twitch/%1"_s;
 const QString API_URL_EMOTE_SET = u"https://7tv.io/v3/emote-sets/%1"_s;
 const QString API_URL_PRESENCES = u"https://7tv.io/v3/users/%1/presences"_s;
+const QString PROXY_API_URL_USER = u"proxy_placeholder/v3/users/twitch/%1"_s;
+const QString PROXY_API_URL_EMOTE_SET = u"proxy_placeholder/v3/emote-sets/%1"_s;
+const QString PROXY_API_URL_PRESENCES = u"proxy_placeholder/v3/users/%1/presences"_s;
 
 }  // namespace
 
@@ -21,7 +25,9 @@ void SeventvAPI::getUserByTwitchID(
     const QString &twitchID, SuccessCallback<const QJsonObject &> &&onSuccess,
     ErrorCallback &&onError)
 {
-    NetworkRequest(API_URL_USER.arg(twitchID), NetworkRequestType::Get)
+    const auto &end =
+        getSettings()->sevenTvProxy ? PROXY_API_URL_USER : API_URL_USER;
+    NetworkRequest(end.arg(twitchID), NetworkRequestType::Get)
         .timeout(20000)
         .onSuccess(
             [callback = std::move(onSuccess)](const NetworkResult &result) {
@@ -38,7 +44,9 @@ void SeventvAPI::getEmoteSet(const QString &emoteSet,
                              SuccessCallback<const QJsonObject &> &&onSuccess,
                              ErrorCallback &&onError)
 {
-    NetworkRequest(API_URL_EMOTE_SET.arg(emoteSet), NetworkRequestType::Get)
+    const auto &end = getSettings()->sevenTvProxy ? PROXY_API_URL_EMOTE_SET
+                                                  : API_URL_EMOTE_SET;
+    NetworkRequest(end.arg(emoteSet), NetworkRequestType::Get)
         .timeout(25000)
         .onSuccess(
             [callback = std::move(onSuccess)](const NetworkResult &result) {
@@ -65,8 +73,9 @@ void SeventvAPI::updatePresence(const QString &twitchChannelID,
          }},
     };
 
-    NetworkRequest(API_URL_PRESENCES.arg(seventvUserID),
-                   NetworkRequestType::Post)
+    const auto &end = getSettings()->sevenTvProxy ? PROXY_API_URL_PRESENCES
+                                                  : API_URL_PRESENCES;
+    NetworkRequest(end.arg(seventvUserID), NetworkRequestType::Post)
         .json(payload)
         .timeout(10000)
         .onSuccess([callback = std::move(onSuccess)](const auto &) {
