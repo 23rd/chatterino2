@@ -5,6 +5,8 @@
 #include "common/network/NetworkResult.hpp"
 #include "singletons/Settings.hpp"
 
+#include <QDebug>
+
 namespace {
 
 using namespace chatterino::literals;
@@ -27,6 +29,7 @@ void SeventvAPI::getUserByTwitchID(
 {
     const auto &end =
         getSettings()->sevenTvProxy ? PROXY_API_URL_USER : API_URL_USER;
+    qDebug() << "getUserByTwitchID" << end << end.arg(twitchID);
     NetworkRequest(end.arg(twitchID), NetworkRequestType::Get)
         .timeout(20000)
         .onSuccess(
@@ -46,6 +49,7 @@ void SeventvAPI::getEmoteSet(const QString &emoteSet,
 {
     const auto &end = getSettings()->sevenTvProxy ? PROXY_API_URL_EMOTE_SET
                                                   : API_URL_EMOTE_SET;
+    qDebug() << "getEmoteSet" << end << end.arg(emoteSet);
     NetworkRequest(end.arg(emoteSet), NetworkRequestType::Get)
         .timeout(25000)
         .onSuccess(
@@ -75,6 +79,7 @@ void SeventvAPI::updatePresence(const QString &twitchChannelID,
 
     const auto &end = getSettings()->sevenTvProxy ? PROXY_API_URL_PRESENCES
                                                   : API_URL_PRESENCES;
+    qDebug() << "updatePresence" << end << end.arg(seventvUserID);
     NetworkRequest(end.arg(seventvUserID), NetworkRequestType::Post)
         .json(payload)
         .timeout(10000)
