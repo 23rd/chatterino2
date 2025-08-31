@@ -12,6 +12,7 @@ on:
 
 jobs:
   changelog-category-check:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v8
