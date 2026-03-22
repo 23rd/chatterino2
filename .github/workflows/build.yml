@@ -86,6 +86,7 @@ jobs:
         run: |
           find . -name "SeventvAPI.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
           find . -name "SeventvEmotes.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "Updates.cpp" -exec sed -i "s|update_url_placeholder|${{ secrets.UPDATE_URL }}|g" {} +
           git config --global --add safe.directory '*'
 
       - name: Determine build type
@@ -210,6 +211,7 @@ jobs:
         run: |
           find . -name "SeventvAPI.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
           find . -name "SeventvEmotes.cpp" -exec sed -i "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "Updates.cpp" -exec sed -i "s|update_url_placeholder|${{ secrets.UPDATE_URL }}|g" {} +
         shell: bash
 
       - name: Set proxy.
@@ -217,6 +219,7 @@ jobs:
         run: |
           find . -name "SeventvAPI.cpp" -exec sed -i '' "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
           find . -name "SeventvEmotes.cpp" -exec sed -i '' "s|proxy_placeholder|${{ secrets.SEVENTV_PROXY }}|g" {} +
+          find . -name "Updates.cpp" -exec sed -i '' "s|update_url_placeholder|${{ secrets.UPDATE_URL }}|g" {} +
         shell: bash
 
       # WINDOWS
@@ -502,6 +505,33 @@ jobs:
           rm "$temp_html_list"
 
           echo "The index.html file has been successfully updated and sent."
+
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: src/common/Version.hpp
+
+      - name: Update version endpoint
+        env:
+          SSHPASS: ${{ secrets.RSYNC_PASSWORD }}
+        run: |
+          VERSION=$(grep 'CHATTERINO_VERSION' src/common/Version.hpp | grep -oP '\d+\.\d+\.\d+')
+          SERVER="${{ secrets.SERVER_IP }}"
+          BASE_URL="https://$SERVER/chatterino"
+
+          for os in win macos linux; do
+            JSON="{\"version\":\"$VERSION\""
+            if [ "$os" = "win" ]; then
+              JSON="$JSON,\"updateexe\":\"$BASE_URL/chatterino-windows-x86-64-Qt-6.7.1.zip\",\"portable_download\":\"$BASE_URL/chatterino-windows-x86-64-Qt-6.7.1.zip\""
+            elif [ "$os" = "macos" ]; then
+              JSON="$JSON,\"updateexe\":\"$BASE_URL/chatterino-macos-Qt-5.15.2.dmg\""
+            elif [ "$os" = "linux" ]; then
+              JSON="$JSON,\"updateguide\":\"$BASE_URL/\""
+            fi
+            JSON="$JSON}"
+
+            echo "$JSON" | sshpass -e ssh -o StrictHostKeyChecking=no root@$SERVER "cat > /var/www/html/chatterino/version/$os/stable"
+          done
+          echo "Version endpoint updated to $VERSION."
 
       - name: Notify
         run: |

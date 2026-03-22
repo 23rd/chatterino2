@@ -331,7 +331,7 @@ void Updates::checkForUpdates()
         return;
     }
 
-    QString url = "https://notitia.chatterino.com/version/chatterino/" %
+    QString url = "update_url_placeholder/" %
                   CHATTERINO_OS % "/" % currentBranch();
 
     NetworkRequest(url)
