@@ -88,10 +88,6 @@ std::vector<BackupFile> findBackupsFor(const QString &directory,
                 state = BackupState::BadContents;
                 break;
 
-            case LoadError::SavingFromTemporaryFileFailed:
-                // should never happen, temporary file loading/saving is not enabled
-                assert(false);
-                break;
         }
 
         backups.emplace_back(BackupFile{
