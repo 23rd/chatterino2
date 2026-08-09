@@ -5,13 +5,13 @@
 #include "widgets/buttons/InitUpdateButton.hpp"
 
 #include "Application.hpp"
-#include "widgets/buttons/PixmapButton.hpp"
+#include "singletons/Updates.hpp"
+#include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/UpdateDialog.hpp"
 
 namespace chatterino {
 
-void initUpdateButton(PixmapButton &button,
-                      const std::function<void()> &relayout,
+void initUpdateButton(SvgButton &button, const std::function<void()> &relayout,
                       pajlada::Signals::SignalHolder &signalHolder)
 {
     button.hide();
@@ -48,12 +48,45 @@ void initUpdateButton(PixmapButton &button,
 
     // update image when state changes
     auto updateChange = [&button, relayout](auto) {
-        button.setVisible(getApp()->getUpdates().shouldShowUpdateButton());
+        const auto &updates = getApp()->getUpdates();
+        button.setVisible(updates.shouldShowUpdateButton());
 
-        const auto *imageUrl = getApp()->getUpdates().isError()
-                                   ? ":/buttons/updateError.png"
-                                   : ":/buttons/update.png";
-        button.setPixmap(QPixmap(imageUrl));
+        // One icon, tinted by state: red when something went wrong, green once
+        // the update is downloaded and only a restart is left, and the theme's
+        // own colour while it is merely available or downloading.
+        std::optional<QColor> tint;
+        if (updates.isError())
+        {
+            tint = QColor(255, 92, 92);
+        }
+        else if (updates.getStatus() == Updates::UpdateReady)
+        {
+            tint = QColor(88, 190, 110);
+        }
+        button.setColor(tint);
+
+        button.setToolTip([&]() -> QString {
+            switch (updates.getStatus())
+            {
+                case Updates::UpdateReady:
+                    return QStringLiteral(
+                               "Version %1 is ready - it installs when you "
+                               "close Chatterino")
+                        .arg(updates.getOnlineVersion());
+                case Updates::Downloading: {
+                    auto progress = updates.getDownloadProgress();
+                    return progress >= 0
+                               ? QStringLiteral("Downloading the update... %1%")
+                                     .arg(progress)
+                               : QStringLiteral("Downloading the update...");
+                }
+                case Updates::UpdateAvailable:
+                    return QStringLiteral("Version %1 is available")
+                        .arg(updates.getOnlineVersion());
+                default:
+                    return QStringLiteral("Update");
+            }
+        }());
 
         relayout();
     };
