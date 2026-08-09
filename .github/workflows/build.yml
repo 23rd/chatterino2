@@ -8,6 +8,10 @@ on:
       - dev
       - "bugfix-release/*"
       - "release/*"
+    tags:
+      # Moving this one tag is what cuts a release. There is no tag per
+      # version - the version is the build timestamp, see the "version" job.
+      - latest
   pull_request:
   workflow_dispatch:
     inputs:
@@ -27,18 +31,58 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  C2_ENABLE_LTO: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/bugfix-release/') || startsWith(github.ref, 'refs/heads/release/') }}
+  C2_ENABLE_LTO: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/bugfix-release/') || startsWith(github.ref, 'refs/heads/release/') }}
   CHATTERINO_REQUIRE_CLEAN_GIT: On
-  CHATTERINO_BUILD_TYPE: ${{ case(inputs.buildType != '', inputs.buildType, 'auto') }}
+  # A release must never be a nightly build: nightlies refuse to auto-update and
+  # send the user to a browser instead. The `latest` tag carries no version, so
+  # the "Determine build type" step can't work this out on its own.
+  CHATTERINO_BUILD_TYPE: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || case(inputs.buildType != '', inputs.buildType, 'auto') }}
   CONAN_VERSION: 2.28.1
 
 jobs:
+  version:
+    name: "Determine version"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            # Not a release. An empty version makes cmake/ForkVersion.cmake mark
+            # the build as development, which never auto-updates.
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "Not a release build."
+            exit 0
+          fi
+
+          # The version is the build timestamp: YYYY.MMDD.HHMM, e.g. 2026.809.1425.
+          #
+          # Worked out once here and handed to every job, so all platforms in one
+          # release report the same version rather than whatever the clock said
+          # when each job happened to start.
+          #
+          # 10# strips the leading zeros: semver rejects "0809", and without the
+          # time component two releases on one day would collide and clients
+          # would never see the second one.
+          day=$(date -u +%m%d)
+          time=$(date -u +%H%M)
+          version="$(date -u +%Y).$((10#$day)).$((10#$time))"
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version"
+
   build-ubuntu-docker:
     # Our Ubuntu builds are built using Docker images that have been pre-published.
     # This speeds up builds for us since we do some pre-building of packages that takes a long time
     # However, this means if you need to add a dependency to the build, you'll need to do that
     # in the https://github.com/Chatterino/docker repository first.
     name: "Build Ubuntu in Docker"
+    needs: [version]
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}
     strategy:
@@ -75,6 +119,9 @@ jobs:
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
+      # Read by cmake/ForkVersion.cmake. Empty outside releases, which marks the
+      # build as development so it never auto-updates.
+      CHATTERINO_FORK_VERSION: ${{ needs.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v7
@@ -146,6 +193,7 @@ jobs:
 
   build:
     name: "Build ${{ matrix.os }}, Qt ${{ matrix.qt-version }} (LTO:${{ matrix.force-lto }}, crashpad:${{ case(matrix.skip-crashpad, 'off', 'on') }})"
+    needs: [version]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -167,6 +215,9 @@ jobs:
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
+      # Read by cmake/ForkVersion.cmake. Empty outside releases, which marks the
+      # build as development so it never auto-updates.
+      CHATTERINO_FORK_VERSION: ${{ needs.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v7
@@ -383,9 +434,11 @@ jobs:
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}.dmg
 
   create-release:
-    needs: [build-ubuntu-docker, build]
+    needs: [version, build-ubuntu-docker, build]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    # Two rolling releases: the nightly off master, and `latest`, which is the
+    # one clients update themselves to.
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')))
 
     steps:
       - uses: actions/checkout@v7
@@ -401,11 +454,6 @@ jobs:
       - name: Copy flatpakref
         run: |
           cp .CI/chatterino-nightly.flatpakref release-artifacts/
-        shell: bash
-
-      - name: Remove macOS artifacts
-        run: |
-          rm -f release-artifacts/*macos*.dmg
         shell: bash
 
       - name: Setup Python
@@ -432,24 +480,29 @@ jobs:
           artifactErrorsFailBuild: true
           artifacts: "release-artifacts/*"
           body: ${{ steps.format-changes.outputs.changelog }}
-          prerelease: true
-          name: Nightly Release
-          tag: nightly-build
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          # One release that gets rewritten in place; the version lives in its
+          # name, since the tag no longer carries one.
+          name: ${{ startsWith(github.ref, 'refs/tags/') && needs.version.outputs.version || 'Nightly Release' }}
+          tag: ${{ startsWith(github.ref, 'refs/tags/') && 'latest' || 'nightly-build' }}
 
       - name: Update nightly-build tag
+        if: github.ref == 'refs/heads/master'
         run: |
           git tag -f nightly-build
           git push -f origin nightly-build
         shell: bash
 
   deploy:
-    needs: [create-release]
+    needs: [version, create-release]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    # Nightlies keep being mirrored to the server for manual download; only the
+    # version endpoint below is restricted to releases.
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')))
     steps:
       - uses: robinraju/release-downloader@v1
         with:
-          tag: 'nightly-build'
+          tag: ${{ startsWith(github.ref, 'refs/tags/') && 'latest' || 'nightly-build' }}
           fileName: '*'
           out-file-path: 'myassets'
 
@@ -506,30 +559,79 @@ jobs:
 
           echo "The index.html file has been successfully updated and sent."
 
-      - uses: actions/checkout@v5
-        with:
-          sparse-checkout: src/common/Version.hpp
-
       - name: Update version endpoint
+        # Tags only: this is what clients update themselves to, so it must never
+        # be pointed at an untagged build (which reports itself as 0.0.0).
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           SSHPASS: ${{ secrets.RSYNC_PASSWORD }}
+          UPDATE_URL: ${{ secrets.UPDATE_URL }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          VERSION=$(grep 'CHATTERINO_VERSION' src/common/Version.hpp | grep -oP '\d+\.\d+\.\d+')
+          set -euo pipefail
+
+          # Same value the binaries were built with, so what the endpoint
+          # advertises is exactly what the app reports about itself.
+          if [ -z "$VERSION" ]; then
+            echo "No version was determined for this run - refusing to publish." >&2
+            exit 1
+          fi
+
+          # Still the ssh/rsync target below - only the public URLs stopped
+          # being built out of it.
           SERVER="${{ secrets.SERVER_IP }}"
-          BASE_URL="https://$SERVER/chatterino"
+
+          # Downloads have to come from the same origin the client already
+          # reaches for this very JSON, so derive one from the other instead of
+          # rebuilding it out of SERVER_IP. SERVER_IP is a bare IP meant for
+          # ssh/rsync: an https:// URL built from it fails certificate
+          # validation, and the files sit at the web root rather than under
+          # /chatterino. That combination silently shipped download links that
+          # every client failed on.
+          BASE_URL="${UPDATE_URL%/}"
+          BASE_URL="${BASE_URL%/version}"
+          if [ "$BASE_URL" = "${UPDATE_URL%/}" ]; then
+            echo "UPDATE_URL ('$UPDATE_URL') does not end in /version, so the download base URL cannot be derived from it." >&2
+            exit 1
+          fi
+
+          # Discover the artifact names instead of hardcoding them: they carry
+          # the Qt version, which changes whenever CI bumps Qt.
+          cd myassets
+          WIN_ZIP=$(ls -1 chatterino-windows-x86-64-Qt-*.zip | head -1)
+          MAC_DMG=$(ls -1 chatterino-macos-Qt-*.dmg | head -1)
+          cd ..
+
+          echo "Publishing $VERSION (windows: $WIN_ZIP, macos: $MAC_DMG)"
+
+          # Fail here rather than publish an endpoint clients choke on. Uses the
+          # same TLS validation the app does, so a bad host or certificate is
+          # caught now instead of showing up as "Failed to download the update".
+          for file in "$WIN_ZIP" "$MAC_DMG"; do
+            if ! curl -fsSI --max-time 60 "$BASE_URL/$file" >/dev/null; then
+              echo "$BASE_URL/$file is not downloadable - refusing to publish the endpoint." >&2
+              exit 1
+            fi
+          done
 
           for os in win macos linux; do
             JSON="{\"version\":\"$VERSION\""
             if [ "$os" = "win" ]; then
-              JSON="$JSON,\"updateexe\":\"$BASE_URL/chatterino-windows-x86-64-Qt-6.7.1.zip\",\"portable_download\":\"$BASE_URL/chatterino-windows-x86-64-Qt-6.7.1.zip\""
+              # Both point at the portable zip: it is a plain file tree, which is
+              # what the silent updater merges over the installation.
+              JSON="$JSON,\"updateexe\":\"$BASE_URL/$WIN_ZIP\",\"portable_download\":\"$BASE_URL/$WIN_ZIP\""
             elif [ "$os" = "macos" ]; then
-              JSON="$JSON,\"updateexe\":\"$BASE_URL/chatterino-macos-Qt-5.15.2.dmg\""
+              JSON="$JSON,\"updateexe\":\"$BASE_URL/$MAC_DMG\""
             elif [ "$os" = "linux" ]; then
               JSON="$JSON,\"updateguide\":\"$BASE_URL/\""
             fi
             JSON="$JSON}"
 
-            echo "$JSON" | sshpass -e ssh -o StrictHostKeyChecking=no root@$SERVER "cat > /var/www/html/chatterino/version/$os/stable"
+            # Written to both channels so the "receive beta updates" toggle
+            # doesn't point users at a 404.
+            for channel in stable beta; do
+              echo "$JSON" | sshpass -e ssh -o StrictHostKeyChecking=no root@$SERVER "cat > /var/www/html/chatterino/version/$os/$channel"
+            done
           done
           echo "Version endpoint updated to $VERSION."
 
