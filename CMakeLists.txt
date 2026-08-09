@@ -139,6 +139,7 @@ if (_compiler_launcher)
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/GIT.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/ForkVersion.cmake)
 
 find_package(Qt${MAJOR_QT_VERSION} REQUIRED
     COMPONENTS

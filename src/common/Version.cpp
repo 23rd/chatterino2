@@ -139,6 +139,10 @@ void Version::generateBuildString()
     // e.g. Chatterino 2.3.5 or Chatterino Nightly 2.3.5
     auto s = this->fullVersion();
 
+    // This fork numbers its releases itself, so spell out which upstream
+    // release it is built on top of.
+    s += u" (based on Chatterino "_s % CHATTERINO_UPSTREAM_VERSION % u")"_s;
+
     // Add commit information
     s +=
         QString(
