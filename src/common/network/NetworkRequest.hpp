@@ -51,6 +51,11 @@ public:
     NetworkRequest onSuccess(NetworkSuccessCallback cb) &&;
     NetworkRequest finally(NetworkFinallyCallback cb) &&;
 
+    /// Reports download progress as (bytes received, total bytes), where the
+    /// total is -1 until the server says how big the body is. Fires on the
+    /// thread the reply lives on.
+    NetworkRequest onProgress(NetworkProgressCallback cb) &&;
+
     NetworkRequest payload(const QByteArray &payload) &&;
     NetworkRequest cache() &&;
     /// NetworkRequest makes sure that the `caller` object still exists when the

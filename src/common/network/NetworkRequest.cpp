@@ -75,6 +75,12 @@ NetworkRequest NetworkRequest::finally(NetworkFinallyCallback cb) &&
     return std::move(*this);
 }
 
+NetworkRequest NetworkRequest::onProgress(NetworkProgressCallback cb) &&
+{
+    this->data->onProgress = std::move(cb);
+    return std::move(*this);
+}
+
 NetworkRequest NetworkRequest::header(const char *headerName,
                                       const char *value) &&
 {

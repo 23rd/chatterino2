@@ -49,6 +49,7 @@ public:
     NetworkSuccessCallback onSuccess;
     NetworkErrorCallback onError;
     NetworkFinallyCallback finally;
+    NetworkProgressCallback onProgress;
 
     NetworkRequestType requestType = NetworkRequestType::Get;
 

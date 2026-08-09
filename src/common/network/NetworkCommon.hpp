@@ -18,6 +18,8 @@ class NetworkResult;
 using NetworkSuccessCallback = std::function<void(NetworkResult)>;
 using NetworkErrorCallback = std::function<void(NetworkResult)>;
 using NetworkFinallyCallback = std::function<void()>;
+/// Bytes received so far and the total, which is -1 while unknown.
+using NetworkProgressCallback = std::function<void(qint64, qint64)>;
 
 /**
  * @exposeenum c2.HTTPMethod

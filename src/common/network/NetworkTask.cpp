@@ -58,6 +58,14 @@ void NetworkTask::run()
     QObject::connect(this->reply_, &QNetworkReply::finished, this,
                      &NetworkTask::finished);
 
+    if (this->data_->onProgress)
+    {
+        QObject::connect(this->reply_, &QNetworkReply::downloadProgress, this,
+                         [this](qint64 received, qint64 total) {
+                             this->data_->onProgress(received, total);
+                         });
+    }
+
 #ifndef NDEBUG
     if (this->data_->ignoreSslErrors)
     {
