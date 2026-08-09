@@ -542,6 +542,8 @@ set(SOURCE_FILES
         singletons/Theme.hpp
         singletons/Toasts.cpp
         singletons/Toasts.hpp
+        singletons/UpdateInstaller.cpp
+        singletons/UpdateInstaller.hpp
         singletons/Updates.cpp
         singletons/Updates.hpp
         singletons/WindowManager.cpp
@@ -1163,7 +1165,7 @@ target_compile_definitions(${VERSION_PROJECT} PRIVATE
 
 # source group for IDEs
 source_group(TREE ${CMAKE_SOURCE_DIR} FILES ${VERSION_SOURCE_FILES})
-target_include_directories(${VERSION_PROJECT} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${VERSION_PROJECT} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/autogen/)
 target_link_libraries(${VERSION_PROJECT} PRIVATE Qt${MAJOR_QT_VERSION}::Core)
 target_compile_definitions(${VERSION_PROJECT} PRIVATE
     CHATTERINO_GIT_HASH=\"${GIT_HASH}\"

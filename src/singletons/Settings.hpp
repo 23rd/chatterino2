@@ -740,6 +740,7 @@ public:
 
     /// Misc
     BoolSetting betaUpdates = {"/misc/beta", false};
+    BoolSetting silentUpdates = {"/misc/silentUpdates", true};
 
     IntSetting startUpNotification = {"/misc/startUpNotification", 0};
     QStringSetting currentVersion = {"/misc/currentVersion", ""};

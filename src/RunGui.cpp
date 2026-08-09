@@ -25,6 +25,7 @@
 #include <QStyleFactory>
 #include <Qt>
 #include <QtConcurrent>
+#include <QTimer>
 
 #include <csignal>
 #include <cstdlib>
@@ -259,6 +260,8 @@ void runGui(QApplication &a, const Modes &modes, const Paths &paths,
     selfcheck::checkWebp();
 
     updates.deleteOldFiles();
+    // If the previous quit applied an update, this build *is* the staged one.
+    updates.discardAppliedUpdate();
 
     // Clear the cache 1 minute after start.
     QTimer::singleShot(60 * 1000, [cachePath = paths.cacheDirectory(),
@@ -278,7 +281,15 @@ void runGui(QApplication &a, const Modes &modes, const Paths &paths,
     chatterino::NetworkManager::init();
     updates.checkForUpdates();
 
-    QObject::connect(qApp, &QApplication::aboutToQuit, [] {
+    // Re-check periodically so a release published while Chatterino is open is
+    // already downloaded by the time the user quits.
+    auto *updateTimer = new QTimer(qApp);
+    QObject::connect(updateTimer, &QTimer::timeout, [&updates] {
+        updates.checkForUpdates();
+    });
+    updateTimer->start(3 * 60 * 60 * 1000);
+
+    QObject::connect(qApp, &QApplication::aboutToQuit, [&updates] {
         auto *app = dynamic_cast<Application *>(tryGetApp());
         assert(app != nullptr);
         app->aboutToQuit();
@@ -287,6 +298,10 @@ void runGui(QApplication &a, const Modes &modes, const Paths &paths,
         getSettings()->disableSave();
 
         app->stop();
+
+        // Last thing before we go: let the helper swap in whatever was
+        // downloaded. It waits for this process to exit first.
+        updates.applyStagedUpdate();
     });
 
     Application app(settings, paths, args, updates);

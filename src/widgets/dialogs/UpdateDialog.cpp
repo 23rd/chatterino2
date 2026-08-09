@@ -82,9 +82,21 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
         break;
 
         case Updates::Downloading: {
+            auto progress = getApp()->getUpdates().getDownloadProgress();
             this->ui_.label->setText(
-                "Downloading updates.\n\nChatterino will restart "
-                "automatically when the download is done.");
+                progress >= 0 ? QStringLiteral("Downloading the update... %1%")
+                                    .arg(progress)
+                              : QStringLiteral("Downloading the update..."));
+        }
+        break;
+
+        case Updates::UpdateReady: {
+            this->ui_.label->setText(
+                QStringLiteral("Version %1 is downloaded and ready.\n\nIt will "
+                               "be installed the next time you close "
+                               "Chatterino.")
+                    .arg(getApp()->getUpdates().getOnlineVersion()));
+            this->updateGeometry();
         }
         break;
 

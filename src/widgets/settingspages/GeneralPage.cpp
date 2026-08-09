@@ -17,6 +17,8 @@
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
+#include "singletons/UpdateInstaller.hpp"
+#include "singletons/Updates.hpp"
 #include "util/FuzzyConvert.hpp"
 #include "util/Helpers.hpp"
 #include "util/IncognitoBrowser.hpp"
@@ -54,6 +56,58 @@ const QStringList ZOOM_LEVELS = {
     "0.5x", "0.6x", "0.7x", "0.8x",  "0.9x",  "Default", "1.2x", "1.4x",
     "1.6x", "1.8x", "2x",   "2.33x", "2.66x", "3x",      "3.5x", "4x",
 };
+
+/// One-line summary of where the updater currently stands, shown next to the
+/// "Check for updates now" button.
+QString updateStatusText()
+{
+    const auto &updates = getApp()->getUpdates();
+
+    switch (updates.getStatus())
+    {
+        case Updates::Searching:
+            return u"Checking for updates..."_s;
+
+        case Updates::Downloading: {
+            auto progress = updates.getDownloadProgress();
+            if (progress >= 0)
+            {
+                return u"Downloading version %1... %2%"_s
+                    .arg(updates.getOnlineVersion())
+                    .arg(progress);
+            }
+            return u"Downloading version %1..."_s.arg(
+                updates.getOnlineVersion());
+        }
+
+        case Updates::UpdateReady:
+            return u"Version %1 is downloaded. It will be installed the next time you close Chatterino."_s
+                .arg(updates.getOnlineVersion());
+
+        case Updates::UpdateAvailable:
+            if (UpdateInstaller::isSupported() && getSettings()->silentUpdates)
+            {
+                return u"Version %1 is available. It will be installed once you close Chatterino."_s
+                    .arg(updates.getOnlineVersion());
+            }
+            return u"Version %1 is available."_s.arg(
+                updates.getOnlineVersion());
+
+        case Updates::NoUpdateAvailable:
+            return u"You are on the latest version (%1)."_s.arg(
+                updates.getCurrentVersion());
+
+        case Updates::SearchFailed:
+            return u"Could not reach the update server."_s;
+
+        case Updates::DownloadFailed:
+        case Updates::WriteFileFailed:
+            return u"Downloading the update failed."_s;
+
+        default:
+            return u"Current version: %1."_s.arg(updates.getCurrentVersion());
+    }
+}
 
 void addKeyboardModifierSetting(GeneralPageView &layout, const QString &title,
                                 EnumSetting<Qt::KeyboardModifier> &setting)
@@ -883,6 +937,29 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
         SettingWidget::checkbox("Receive beta updates", s.betaUpdates)
             ->addTo(layout);
+
+        if (UpdateInstaller::isSupported())
+        {
+            SettingWidget::checkbox("Install updates automatically",
+                                    s.silentUpdates)
+                ->setTooltip(
+                    "Downloads new versions in the background and installs "
+                    "them once you close Chatterino, so the next start is "
+                    "already on the new version.")
+                ->addTo(layout);
+        }
+
+        auto *updateStatus = layout.addDescription(updateStatusText());
+        layout.addButton("Check for updates now", [] {
+            getApp()->getUpdates().checkForUpdates();
+        });
+
+        // The check runs in the background, so report where it got to. Dies
+        // with the page, hence the managed connection.
+        this->managedConnections_.managedConnect(
+            getApp()->getUpdates().statusUpdated, [updateStatus](auto) {
+                updateStatus->setText(updateStatusText());
+            });
     }
     else
     {

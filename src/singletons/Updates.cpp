@@ -55,6 +55,7 @@ Updates::Updates(const Modes &modes_, const Paths &paths_, Settings &settings)
     , modes(modes_)
     , currentVersion_(CHATTERINO_VERSION)
     , updateGuideLink_("https://chatterino.com")
+    , installer_(paths_)
 {
     qCDebug(chatterinoUpdate) << "init UpdateManager";
 
@@ -148,6 +149,18 @@ void Updates::installUpdates()
     box->open();
     QDesktopServices::openUrl(this->updateGuideLink_);
 #elif defined Q_OS_WIN
+    if (UpdateInstaller::isSupported())
+    {
+        // This fork ships no installer .exe, so "updateexe" is the portable zip
+        // as well - saving that as Update.exe and running it could never work.
+        // Take the same route silent updates take instead: unpack it next to
+        // the settings now and swap it in once Chatterino is closed.
+        // No dialog: the button and the update popup show the progress and
+        // then say it is ready, which beats a modal box that can't be updated.
+        this->stageUpdate_();
+        return;
+    }
+
     if (this->modes.isPortable)
     {
         QMessageBox *box =
@@ -394,6 +407,8 @@ void Updates::checkForUpdates()
                 this->setStatus_(UpdateAvailable);
                 this->isDowngrade_ = Updates::isDowngradeOf(
                     this->onlineVersion_, this->currentVersion_);
+
+                this->stageSilentUpdate();
             }
             else
             {
@@ -421,6 +436,7 @@ bool Updates::shouldShowUpdateButton() const
     switch (this->getStatus())
     {
         case UpdateAvailable:
+        case UpdateReady:
         case SearchFailed:
         case Downloading:
         case DownloadFailed:
@@ -486,6 +502,95 @@ QString Updates::buildUpdateAvailableText() const
     return QString("An update (%1) is available.\n\nDo you want to "
                    "download and install it?")
         .arg(this->getOnlineVersion());
+}
+
+void Updates::stageUpdate_()
+{
+#if defined(Q_OS_WIN)
+    // The portable zip is a plain file tree, which is exactly what the swap
+    // merges over the installation. The installer .exe would need a user to
+    // click through it.
+    const auto &url = this->updatePortable_;
+#elif defined(Q_OS_MACOS)
+    const auto &url = this->updateExe_;
+#else
+    const QString url;
+#endif
+
+    if (url.isEmpty() || !UpdateInstaller::isSupported())
+    {
+        return;
+    }
+
+    this->setDownloadProgress_(-1);
+    this->setStatus_(Downloading);
+
+    this->installer_.stage(
+        url, this->onlineVersion_,
+        [this](bool ok) {
+            // UpdateReady rather than back to UpdateAvailable: the download is
+            // done and the only thing left is a restart, and the UI has to be
+            // able to say so.
+            this->setStatus_(ok ? UpdateReady : DownloadFailed);
+        },
+        [this](int percent) {
+            this->setDownloadProgress_(percent);
+        });
+}
+
+void Updates::stageSilentUpdate()
+{
+    if (!getSettings()->silentUpdates || !UpdateInstaller::isSupported())
+    {
+        return;
+    }
+
+    if (this->isDowngrade_)
+    {
+        // Quietly rolling back would be surprising - leave that to the button.
+        return;
+    }
+
+    this->stageUpdate_();
+}
+
+int Updates::getDownloadProgress() const
+{
+    return this->downloadProgress_;
+}
+
+void Updates::setDownloadProgress_(int percent)
+{
+    if (this->downloadProgress_ == percent)
+    {
+        return;
+    }
+
+    this->downloadProgress_ = percent;
+
+    // Status itself hasn't changed, but everything showing it also shows the
+    // percentage, so nudge the same signal.
+    postToThread([this] {
+        this->statusUpdated.invoke(this->status_);
+    });
+}
+
+void Updates::applyStagedUpdate()
+{
+    this->installer_.applyStagedUpdate();
+}
+
+void Updates::discardAppliedUpdate()
+{
+    const auto staged = this->installer_.stagedVersion();
+
+    // Empty covers both "nothing there" and leftovers the swap script couldn't
+    // clean up after itself, e.g. the Windows helper can't delete the directory
+    // it is running from. Equal means we already are the staged build.
+    if (staged.isEmpty() || staged == this->currentVersion_)
+    {
+        this->installer_.discardStaged();
+    }
 }
 
 void Updates::setStatus_(Status status)
